@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Game
 {
-    public class Sway : MonoBehaviour
+    /*public class Sway : MonoBehaviour
     {
         [SerializeField] private Transform m_WeaponSwayTransform;
         [SerializeField] private Movement m_PlayerMovement;
@@ -19,7 +19,7 @@ namespace Game
         private void Update()
         {
             if (m_WeaponSwayDS == null) return;
-            SwayWeapon(m_PlayerCamera.MouseDelta, Time.deltaTime);
+            //SwayWeapon(m_PlayerCamera.MouseDelta, Time.deltaTime);
         }
 
         public void SwitchWeapon(WeaponSwayDS data)
@@ -68,5 +68,5 @@ namespace Game
         {
             return new Vector2(Mathf.Clamp(input.x, min.x, max.x), Mathf.Clamp(input.y, min.y, max.y));
         }
-    }
+    }*/
 }

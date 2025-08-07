@@ -5,7 +5,7 @@ using static UnityEditor.PlayerSettings;
 
 namespace Game
 {
-    public class Bob : MonoBehaviour
+    /*public class Bob : MonoBehaviour
     {
         [SerializeField] private Movement m_Movement;
 
@@ -87,12 +87,12 @@ namespace Game
             }
             else
             {
-                if (m_Movement.IsWalk)
+                if (m_Movement.CurrentMoveState == Movement.MoveState.Walk)
                 {
                     _amplitude = m_WalkAmplitude;
                     _frequency = m_WalkFrequency;
                 }
-                else if(m_Movement.IsSprint)
+                else if(m_Movement.CurrentMoveState == Movement.MoveState.Sprint)
                 {
                     _amplitude = m_SprintAmplitude;
                     _frequency = m_SprintFrequency;
@@ -150,5 +150,5 @@ namespace Game
 
         public void CameraBobStart() { m_CameraBobStarted = false; }
         public void WeaponBobStart() { m_WeaponBobStarted = false; }
-    }
+    }*/
 }

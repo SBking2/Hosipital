@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-public class PlayerController : MonoBehaviour
+/*public class PlayerController2 : MonoBehaviour
 {
     private PlayerCamera m_Camera;
     private Movement m_Movement;
@@ -17,7 +17,8 @@ public class PlayerController : MonoBehaviour
     private void Update()
     {
         m_Movement.SetInputMoveDirect(new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical")));
-        m_Camera.SetInputMouseDirect(new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y")));
+        //m_Camera.SetInputMouseDirect(new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y")));
+        m_Movement.SetSprintState(Input.GetKey(KeyCode.LeftShift));
     }
 
     private void OnEnable()
@@ -29,4 +30,4 @@ public class PlayerController : MonoBehaviour
     {
         
     }
-}
+}*/

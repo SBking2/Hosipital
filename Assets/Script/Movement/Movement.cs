@@ -1,174 +1,92 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Game
+[RequireComponent(typeof(Rigidbody))]
+public class Movement : MonoBehaviour
 {
-    public class Movement : MonoBehaviour
+    public float move_speed;
+    public float ground_check_radius;
+    public float ground_drag;
+    public float jump_force;
+    public float air_multiplier;
+    public LayerMask ground_layer;
+
+    private Rigidbody m_rigidbody;
+    private Vector3 m_move_direct;
+
+    [SerializeField] private PlayerDebugger m_debugger;
+
+    public bool IsGround { get; private set; }
+
+    private void Awake()
     {
-        public Action _OnStateSwitchEvent;
-
-        #region Para
-        [Header("------------ Movement Para --------------")]
-        public float Acceleration;
-        public float Deceleration;
-
-        [SerializeField] private float m_WalkSpeed;
-        [SerializeField] private float m_SprintSpeed;
-        [SerializeField] private float m_CrouchSpeed;
-        private float m_CurrentSpeed;
-
-        [Header("------------ Gound About ----------------")]
-        [SerializeField] private float m_Gravity;
-        public LayerMask groundLayer;
-
-        [Header("============== Crouch Para =======================")]
-        [SerializeField] private float m_OriginalHeight;
-        [SerializeField] private float m_CrouchHeight;
-        private float m_OriginalCenter;
-        private float m_CrouchCenter;
-
-        [SerializeField] private float m_CrouchDownSpeed;
-        [SerializeField] private float m_StandUpSpeed;
-        #endregion
-
-        #region Player State
-        public bool IsMoving { get; private set; }
-        public bool IsGround { get; private set; }
-        public bool IsWalk { get; private set; }
-        public bool IsSprint { get; private set; }
-        public bool IsCrouching { get; private set; }
-        #endregion
-
-        #region Invisiable Property
-        private Vector2 m_TargetDirect;
-        #endregion
-
-        #region Component
-        private Transform m_CameraPivotTransform;
-        private CharacterController m_CharacterController;
-        private SphereCollider m_GroundCheckCollider;
-        private Vector3 m_GroundCheckColliderStartPos;
-        private Vector3 m_GroundCheckColliderCrouchPos;
-        #endregion
-
-        #region Move Value
-        private Vector3 m_TargetVelocity;
-        private Vector3 m_MoveVelocity;
-        private float m_YVelocity;
-        #endregion
-
-        private void Awake()
-        {
-            m_CharacterController = GetComponent<CharacterController>();
-            m_CameraPivotTransform = this.transform.Find("CameraPivot").transform;
-            m_GroundCheckCollider = this.transform.Find("GroundCheck").GetComponent<SphereCollider>();
-        }
-
-        private void Start()
-        {
-            m_OriginalCenter = 0.0f;
-            m_CrouchCenter = (m_OriginalHeight - m_CrouchHeight) / 2;
-
-            //确定GroudCheck初始位置
-            m_GroundCheckColliderStartPos = m_GroundCheckCollider.transform.localPosition;
-
-            //确定蹲下后GroundCheck的位置
-            m_GroundCheckColliderCrouchPos = m_GroundCheckColliderStartPos;
-            m_GroundCheckColliderCrouchPos.y += (m_OriginalHeight - m_CrouchHeight);
-        }
-
-        private void Update()
-        {
-            float delta = Time.deltaTime;
-
-            m_CurrentSpeed = m_WalkSpeed;
-
-            GroundCheck();
-
-            HandleMovement(delta);
-            CrouchHandler(delta);
-
-            m_CharacterController.Move(m_MoveVelocity * delta);
-            m_CharacterController.Move(new Vector3(0.0f, m_YVelocity, 0.0f) * delta);
-
-        }
-
-        private void HandleMovement(float delta)
-        {
-            m_TargetVelocity = m_CameraPivotTransform.rotation * new Vector3(m_TargetDirect.x, 0.0f, m_TargetDirect.y);
-            m_TargetVelocity.y = 0.0f;
-
-            if (m_TargetDirect != Vector2.zero)
-            {
-                IsMoving = true;
-                IsWalk = true;
-            }
-            else
-            {
-                IsMoving = false;
-                IsWalk = false;
-            }
-
-            m_MoveVelocity = Vector3.Lerp(m_MoveVelocity, m_TargetVelocity * m_CurrentSpeed, delta * Acceleration);
-
-            if(!IsGround)
-            {
-                m_YVelocity += m_Gravity * delta;
-            }
-        }
-
-        private void GroundCheck()
-        {
-            Collider[] colliders = Physics.OverlapSphere(
-            m_GroundCheckCollider.center + m_GroundCheckCollider.transform.position
-            , m_GroundCheckCollider.radius, groundLayer);
-
-            if (colliders.Length > 0)
-                IsGround = true;
-            else
-                IsGround = false;
-        }
-        private void CrouchHandler(float delta)
-        {
-            if(IsCrouching)
-            {
-                m_CharacterController.height = Mathf.Lerp(m_CharacterController.height
-                    , m_CrouchHeight, m_CrouchDownSpeed * delta);
-
-                float centerY = m_CharacterController.center.y;
-                centerY = Mathf.Lerp(centerY, m_CrouchCenter, m_CrouchDownSpeed * delta);
-                m_CharacterController.center = new Vector3(0.0f, centerY, 0.0f);
-
-                //处理GroundCheck的位置
-                m_GroundCheckCollider.transform.localPosition
-                    = Vector3.Lerp(m_GroundCheckCollider.transform.localPosition, m_GroundCheckColliderCrouchPos
-                    , m_CrouchDownSpeed * delta);
-            }
-            else
-            {
-                m_CharacterController.enabled = false;
-
-                m_CharacterController.height = Mathf.Lerp(m_CharacterController.height
-                    , m_OriginalHeight, m_StandUpSpeed * delta);
-
-                float centerY = m_CharacterController.center.y;
-                centerY = Mathf.Lerp(centerY, m_OriginalCenter, m_StandUpSpeed * delta);
-                m_CharacterController.center = new Vector3(0.0f, centerY, 0.0f);
-                
-                if(m_OriginalHeight - m_CharacterController.height > 0.01f)
-                    transform.position += new Vector3(0.0f, 0.010f, 0.0f);
-
-                m_CharacterController.enabled = true;
-
-                //处理GroundCheck的位置
-                m_GroundCheckCollider.transform.localPosition
-                    = Vector3.Lerp(m_GroundCheckCollider.transform.localPosition, m_GroundCheckColliderStartPos
-                    , m_StandUpSpeed * delta);
-            }
-        }
-        public void SetInputMoveDirect(Vector2 direct) { m_TargetDirect = direct; }
+        m_rigidbody = GetComponent<Rigidbody>();
     }
 
+    private void Update()
+    {
+        if(IsGround)
+        {
+            m_rigidbody.drag = ground_drag;
+        }else
+        {
+            m_rigidbody.drag = 0.0f;
+        }
+        GroundCheck();
+        m_debugger.Refreash(m_rigidbody.velocity.magnitude);
+    }
+
+    private void FixedUpdate()
+    {
+        float delta = Time.fixedDeltaTime;
+        HandlerInputMove(delta);
+    }
+
+    private void HandlerInputMove(float delta)
+    {
+        if(IsGround)
+            m_rigidbody.AddForce(m_move_direct.normalized * move_speed, ForceMode.Force);
+        else
+            m_rigidbody.AddForce(m_move_direct.normalized * move_speed * air_multiplier, ForceMode.Force);
+
+        Vector3 velocity = new Vector3(m_rigidbody.velocity.x, 0.0f, m_rigidbody.velocity.z);
+        if(velocity.magnitude > move_speed)
+        {
+            m_rigidbody.velocity = velocity.normalized * move_speed 
+                + new Vector3(0.0f, m_rigidbody.velocity.y, 0.0f);
+        }
+    }
+
+    public void SetMoveDirect(Vector3 direct)
+    {
+        m_move_direct = direct;
+    }
+
+    private void GroundCheck()
+    {
+        Collider[] collider = Physics.OverlapSphere(transform.position, ground_check_radius, ground_layer);
+        if(collider.Length > 0 )
+            IsGround = true;
+        else
+            IsGround = false;
+    }
+
+    public void Jump()
+    {
+        if(IsGround)
+        {
+            m_rigidbody.velocity = new Vector3(m_rigidbody.velocity.x, 0.0f, m_rigidbody.velocity.z);
+            m_rigidbody.AddForce(transform.up * jump_force, ForceMode.Impulse);
+        }
+    }
+
+#if UNITY_EDITOR
+    private void OnDrawGizmos()
+    {
+        //绘制Ground Check
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(transform.position, ground_check_radius);
+    }
+#endif
 }
