@@ -8,6 +8,8 @@ public class InputManager : Singleton<InputManager>, EeInput.IPlayerActions
     public UnityAction<Vector2> onMouseDelta;
     public UnityAction<Vector2> onMoveDelta;
     public UnityAction onJump;
+    public UnityAction<bool> onSprint;
+    public UnityAction<bool> onCroch;
 
     EeInput m_input_action;
 
@@ -39,6 +41,28 @@ public class InputManager : Singleton<InputManager>, EeInput.IPlayerActions
         if (onMoveDelta != null && context.performed)
         {
             onMoveDelta(context.ReadValue<Vector2>());
+        }
+    }
+
+    public void OnSprinit(UnityEngine.InputSystem.InputAction.CallbackContext context)
+    {
+        if(onSprint != null)
+        {
+            if (context.started)
+                onSprint(true);
+            else if(context.canceled)
+                onSprint(false);
+        }
+    }
+
+    public void OnCrouch(UnityEngine.InputSystem.InputAction.CallbackContext context)
+    {
+        if (onCroch != null)
+        {
+            if (context.started)
+                onCroch(true);
+            else if (context.canceled)
+                onCroch(false);
         }
     }
 }

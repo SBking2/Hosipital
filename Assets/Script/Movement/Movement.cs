@@ -5,19 +5,45 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody))]
 public class Movement : MonoBehaviour
 {
-    public float move_speed;
+    [Header("Move Property")]
+    public float move_force;
+    public float max_move_speed;
+    [Space(10)]
     public float ground_check_radius;
+    public float ground_check_length;
     public float ground_drag;
     public float jump_force;
     public float air_multiplier;
+    public float air_gravity;
+    public float ground_gravity;
+    [Space(10)]
+    public float ceiling_check_length;
+    [Space(10)]
+    public float crouch_scale;
+    public float crouch_speed;
+    public float crouch_recovery_speed;
+
+    [Header("Ground Set")]
+    //TODO:自己实现重力
     public LayerMask ground_layer;
 
-    private Rigidbody m_rigidbody;
+    private Vector3 m_input_direct;
     private Vector3 m_move_direct;
-
-    [SerializeField] private PlayerDebugger m_debugger;
+    private Vector3 m_slope_normal;
+    private bool m_IsCrouchSignal;
 
     public bool IsGround { get; private set; }
+    public bool IsSlope { get; private set; }
+    public bool IsCroch { get; private set; }
+
+    /// <summary>
+    /// 是否头顶天花板
+    /// </summary>
+    public bool IsCeiling { get; private set; }
+
+    private Rigidbody m_rigidbody;
+    [SerializeField] private CapsuleCollider m_collider;
+    [SerializeField] private PlayerDebugger m_debugger;
 
     private void Awake()
     {
@@ -34,44 +60,118 @@ public class Movement : MonoBehaviour
             m_rigidbody.drag = 0.0f;
         }
         GroundCheck();
-        m_debugger.Refreash(m_rigidbody.velocity.magnitude);
+        SlopeCheck();
+        CeilingCheck();
     }
 
     private void FixedUpdate()
     {
         float delta = Time.fixedDeltaTime;
-        HandlerInputMove(delta);
+        HandleInputMove(delta);
+        HandleGravity(delta);
+        HandleCrouch(delta);
     }
 
-    private void HandlerInputMove(float delta)
+    private void HandleInputMove(float delta)
     {
-        if(IsGround)
-            m_rigidbody.AddForce(m_move_direct.normalized * move_speed, ForceMode.Force);
+        float multiplier = IsGround ? 1.0f : air_multiplier;
+
+        if (IsSlope)
+            m_move_direct = m_input_direct - Vector3.Dot(m_input_direct, m_slope_normal) * m_slope_normal;
         else
-            m_rigidbody.AddForce(m_move_direct.normalized * move_speed * air_multiplier, ForceMode.Force);
+            m_move_direct = m_input_direct;
+
+        m_rigidbody.AddForce(m_move_direct.normalized * move_force * multiplier, ForceMode.Force);
 
         Vector3 velocity = new Vector3(m_rigidbody.velocity.x, 0.0f, m_rigidbody.velocity.z);
-        if(velocity.magnitude > move_speed)
+
+        if(m_debugger != null)  m_debugger.Refreash(m_rigidbody.velocity.magnitude);
+        
+        if (velocity.magnitude > max_move_speed)
         {
-            m_rigidbody.velocity = velocity.normalized * move_speed 
+            m_rigidbody.velocity = velocity.normalized * max_move_speed
                 + new Vector3(0.0f, m_rigidbody.velocity.y, 0.0f);
         }
     }
-
-    public void SetMoveDirect(Vector3 direct)
+    private void HandleGravity(float delta)
     {
-        m_move_direct = direct;
-    }
+        Vector3 force;
+        if (!IsGround)
+            force = Vector3.down * m_rigidbody.mass * air_gravity;
+        else
+            force = Vector3.down * m_rigidbody.mass * ground_gravity;
 
+        m_rigidbody.AddForce(force, ForceMode.Force);
+    }
+    private void HandleCrouch(float delta)
+    {
+        bool isCroch = m_IsCrouchSignal || (IsCroch && IsCeiling);
+
+        float scale = transform.localScale.y;
+        float signal = isCroch ? -1 : 1;
+        float accelerate = isCroch ? crouch_speed : crouch_recovery_speed;
+
+        IsCroch = isCroch;
+
+        scale += signal * accelerate;
+        scale = Mathf.Clamp(scale, crouch_scale, 1.0f);
+        transform.localScale = new Vector3(transform.localScale.x, scale, transform.localScale.z);
+    }
     private void GroundCheck()
     {
-        Collider[] collider = Physics.OverlapSphere(transform.position, ground_check_radius, ground_layer);
-        if(collider.Length > 0 )
-            IsGround = true;
-        else
-            IsGround = false;
-    }
+        float y = transform.position.y - m_collider.height * transform.localScale.y / 2;
+        Vector3 check_pos = transform.position;
+        check_pos.y = y + 0.1f;
 
+        Vector3[] points;
+        GetThreePoint(check_pos, ground_check_radius, out points);
+
+        for(int i = 0; i < 3; i++)
+        {
+            Ray ray = new Ray(points[i], Vector3.down);
+            if(Physics.Raycast(ray, ground_check_length, ground_layer))
+            {
+                IsGround = true;
+                return;
+            }
+        }
+        IsGround = false;
+    }
+    private void CeilingCheck()
+    {
+        float y = transform.position.y + m_collider.height * transform.localScale.y / 2;
+        Vector3 check_pos = transform.position;
+        check_pos.y = y - 0.1f;
+
+        Vector3[] points;
+        GetThreePoint(check_pos, ground_check_radius, out points);
+
+        for (int i = 0; i < 3; i++)
+        {
+            Ray ray = new Ray(points[i], Vector3.up);
+            if (Physics.Raycast(ray, ceiling_check_length, ground_layer))
+            {
+                IsCeiling = true;
+                return;
+            }
+        }
+        IsCeiling = false;
+    }
+    private void SlopeCheck()
+    {
+        float y = transform.position.y - m_collider.height * transform.localScale.y / 2;
+        Vector3 check_pos = transform.position;
+        check_pos.y = y;
+        Ray ray = new Ray(check_pos, Vector3.down);
+        RaycastHit hit;
+        if (Physics.Raycast(ray, out hit, ground_check_radius + 0.1f, ground_layer))
+        {
+            IsSlope = true;
+            m_slope_normal = hit.normal;
+        }
+        else
+            IsSlope = false;
+    }
     public void Jump()
     {
         if(IsGround)
@@ -80,13 +180,54 @@ public class Movement : MonoBehaviour
             m_rigidbody.AddForce(transform.up * jump_force, ForceMode.Impulse);
         }
     }
+    public void SetMoveDirect(Vector3 direct)
+    {
+        m_input_direct = direct;
+    }
+    public void SetCrouch(bool value) { m_IsCrouchSignal = value; }
+
+    private void GetThreePoint(Vector3 pos,float radius,out Vector3[] points)
+    {
+        points = new Vector3[3];
+        float side = radius / Mathf.Sqrt(2);
+        points[0] = pos + transform.rotation * new Vector3(0.0f, 0.0f, radius);
+        points[1] = pos + transform.rotation * new Vector3(-side, 0.0f, -side);
+        points[2] = pos + transform.rotation * new Vector3(side, 0.0f, -side);
+    }
 
 #if UNITY_EDITOR
     private void OnDrawGizmos()
     {
-        //绘制Ground Check
         Gizmos.color = Color.green;
-        Gizmos.DrawWireSphere(transform.position, ground_check_radius);
+        float y = transform.position.y - m_collider.height * transform.localScale.y / 2 ;
+        Vector3 pos = transform.position;
+        pos.y = y + 0.1f;
+
+        //绘制Slope Check
+        Gizmos.DrawRay(pos, Vector3.down * (ground_check_radius + 0.1f));
+
+        Gizmos.color = Color.red;
+
+        //绘制Ground Check
+        Vector3[] points;
+        GetThreePoint(pos, ground_check_radius, out points);
+        for (int i = 0; i < 3; i++)
+        {
+            Gizmos.DrawRay(points[i], Vector3.down * ground_check_length);
+        }
+
+        //绘制Ceiling Check
+        y = transform.position.y + m_collider.height * transform.localScale.y / 2;
+        pos.y = y - 0.1f;
+        GetThreePoint(pos, ground_check_radius, out points);
+        for (int i = 0; i < 3; i++)
+        {
+            Gizmos.DrawRay(points[i], Vector3.up * ceiling_check_length);
+        }
+
+        //绘制move direct
+        Ray move_ray = new Ray(transform.position, m_move_direct);
+        Gizmos.DrawRay(move_ray);
     }
 #endif
 }

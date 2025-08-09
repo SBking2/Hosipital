@@ -9,6 +9,6 @@ public class PlayerDebugger : MonoBehaviour
 
     public void Refreash(float velocity)
     {
-        text_ugui.text = "Velocirt: " + velocity;
+        text_ugui.text = "Velocirt: " + velocity.ToString("F2");
     }
 }

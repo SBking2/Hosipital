@@ -35,6 +35,8 @@ public class PlayerController : Singleton<PlayerController>
         InputManager.Instance.onMouseDelta += m_camera.SetInputMouseDelta;
         InputManager.Instance.onMoveDelta += Input2World;
         InputManager.Instance.onJump += m_player_movement.Jump;
+        InputManager.Instance.onSprint += Debugger;
+        InputManager.Instance.onCroch += m_player_movement.SetCrouch;
     }
 
     public void OnDisable()
@@ -42,6 +44,8 @@ public class PlayerController : Singleton<PlayerController>
         InputManager.Instance.onMouseDelta -= m_camera.SetInputMouseDelta;
         InputManager.Instance.onMoveDelta -= Input2World;
         InputManager.Instance.onJump -= m_player_movement.Jump;
+        InputManager.Instance.onSprint -= Debugger;
+        InputManager.Instance.onCroch -= m_player_movement.SetCrouch;
     }
 
     /// <summary>
@@ -51,5 +55,10 @@ public class PlayerController : Singleton<PlayerController>
     private void Input2World(Vector2 input)
     {
         m_input_direct = new Vector3(input.x, 0.0f, input.y);
+    }
+
+    private void Debugger(bool flag)
+    {
+        Debug.Log(flag);
     }
 }
