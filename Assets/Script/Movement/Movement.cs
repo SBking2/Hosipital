@@ -6,22 +6,35 @@ using UnityEngine;
 public class Movement : MonoBehaviour
 {
     [Header("Move Property")]
-    public float move_force;
-    public float max_move_speed;
+    public float walk_force;
+    public float max_walk_speed;
+    public float run_force;
+    public float max_run_speed;
+
     [Space(10)]
-    public float ground_check_radius;
-    public float ground_check_length;
+    [Header("Air Property")]
     public float ground_drag;
     public float jump_force;
     public float air_multiplier;
     public float air_gravity;
     public float ground_gravity;
+
     [Space(10)]
-    public float ceiling_check_length;
-    [Space(10)]
+    [Header("Croch Property")]
+    public float crouch_force;
+    public float max_crouch_speed;
     public float crouch_scale;
     public float crouch_speed;
     public float crouch_recovery_speed;
+
+    [Space(10)]
+    [Header("Ground Check")]
+    public float ground_check_radius;
+    public float ground_check_length;
+
+    [Space(10)]
+    [Header("Ceiling Check")]
+    public float ceiling_check_length;
 
     [Header("Ground Set")]
     //TODO:自己实现重力
@@ -30,7 +43,9 @@ public class Movement : MonoBehaviour
     private Vector3 m_input_direct;
     private Vector3 m_move_direct;
     private Vector3 m_slope_normal;
+    private float m_limit_speed;
     private bool m_IsCrouchSignal;
+    private bool m_IsRunSignal;
 
     public bool IsGround { get; private set; }
     public bool IsSlope { get; private set; }
@@ -75,7 +90,26 @@ public class Movement : MonoBehaviour
     private void HandleInputMove(float delta)
     {
         float multiplier = IsGround ? 1.0f : air_multiplier;
+        float move_force;
+        float max_move_speed;
+        if(IsCroch)
+        {
+            move_force = crouch_force;
+            max_move_speed = max_crouch_speed;
+        }else if(m_IsRunSignal)
+        {
+            move_force = run_force;
+            max_move_speed = max_run_speed;
+        }else
+        {
+            move_force = walk_force;
+            max_move_speed = max_walk_speed;
+        }
 
+        //起跳速度作为空中的最大速度限制
+        if (IsGround) m_limit_speed = max_move_speed;
+
+        //斜坡处理
         if (IsSlope)
             m_move_direct = m_input_direct - Vector3.Dot(m_input_direct, m_slope_normal) * m_slope_normal;
         else
@@ -83,13 +117,13 @@ public class Movement : MonoBehaviour
 
         m_rigidbody.AddForce(m_move_direct.normalized * move_force * multiplier, ForceMode.Force);
 
+        //速度限制
         Vector3 velocity = new Vector3(m_rigidbody.velocity.x, 0.0f, m_rigidbody.velocity.z);
-
         if(m_debugger != null)  m_debugger.Refreash(m_rigidbody.velocity.magnitude);
         
-        if (velocity.magnitude > max_move_speed)
+        if (velocity.magnitude > m_limit_speed)
         {
-            m_rigidbody.velocity = velocity.normalized * max_move_speed
+            m_rigidbody.velocity = velocity.normalized * m_limit_speed
                 + new Vector3(0.0f, m_rigidbody.velocity.y, 0.0f);
         }
     }
@@ -185,6 +219,7 @@ public class Movement : MonoBehaviour
         m_input_direct = direct;
     }
     public void SetCrouch(bool value) { m_IsCrouchSignal = value; }
+    public void SetRun(bool value) { m_IsRunSignal = value; }
 
     private void GetThreePoint(Vector3 pos,float radius,out Vector3[] points)
     {

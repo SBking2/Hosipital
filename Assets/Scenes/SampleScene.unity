@@ -3435,19 +3435,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7bec2b5080f9460459e2b0e02e7e7154, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  move_force: 45
-  max_move_speed: 7
-  ground_check_radius: 0.4
-  ground_check_length: 0.4
+  walk_force: 45
+  max_walk_speed: 5
+  run_force: 60
+  max_run_speed: 9
   ground_drag: 5
   jump_force: 1.5
   air_multiplier: 0.2
   air_gravity: 12
   ground_gravity: 5
-  ceiling_check_length: 0.8
+  crouch_force: 20
+  max_crouch_speed: 3
   crouch_scale: 0.6
   crouch_speed: 8
   crouch_recovery_speed: 5
+  ground_check_radius: 0.4
+  ground_check_length: 0.4
+  ceiling_check_length: 0.8
   ground_layer:
     serializedVersion: 2
     m_Bits: 64

@@ -35,7 +35,7 @@ public class PlayerController : Singleton<PlayerController>
         InputManager.Instance.onMouseDelta += m_camera.SetInputMouseDelta;
         InputManager.Instance.onMoveDelta += Input2World;
         InputManager.Instance.onJump += m_player_movement.Jump;
-        InputManager.Instance.onSprint += Debugger;
+        InputManager.Instance.onSprint += m_player_movement.SetRun;
         InputManager.Instance.onCroch += m_player_movement.SetCrouch;
     }
 
@@ -44,7 +44,7 @@ public class PlayerController : Singleton<PlayerController>
         InputManager.Instance.onMouseDelta -= m_camera.SetInputMouseDelta;
         InputManager.Instance.onMoveDelta -= Input2World;
         InputManager.Instance.onJump -= m_player_movement.Jump;
-        InputManager.Instance.onSprint -= Debugger;
+        InputManager.Instance.onSprint -= m_player_movement.SetRun;
         InputManager.Instance.onCroch -= m_player_movement.SetCrouch;
     }
 
